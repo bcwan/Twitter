@@ -27,35 +27,43 @@ router.post('/register', (req, res) => {
             if (err) throw err;
             newUser.password = hash;
             newUser.save()
-              .then(user => res.json(user))
+              .then(user => {
+                const payload = { id: user.id, handle: user.handle };
+                jwt.sign(payload, keys.secretOrKey, { expiresIn: 3600 }, (err, token) => {
+                  res.json({
+                    success: true,
+                    token: "Bearer " + token
+                  });
+                });
+              })
               .catch(err => console.log(err));
-          })
-        })
+          });
+        });
       }
-    })
-})
+    });
+  });
 
 router.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
-  User.findOne({email})
+  User.findOne({ email })
     .then(user => {
       if (!user) {
-        return res.status(404).json({email: 'This user does not exist'});
+        return res.status(404).json({ email: 'This user does not exist' });
       }
 
       bcrypt.compare(password, user.password)
         .then(isMatch => {
           if (isMatch) {
             //res.json({msg: 'Success'});
-            const payload = {id: user.id, handle: user.handle};
+            const payload = { id: user.id, handle: user.handle };
 
             jwt.sign(
               payload,
               keys.secretOrKey,
               // Tell the key to expire in one hour
-              {expiresIn: 3600},
+              { expiresIn: 3600 },
               (err, token) => {
                 res.json({
                   success: true,
@@ -63,7 +71,7 @@ router.post('/login', (req, res) => {
                 });
               });
           } else {
-            return res.status(400).json({password: 'Incorrect password'});
+            return res.status(400).json({ password: 'Incorrect password' });
           }
         })
     })
